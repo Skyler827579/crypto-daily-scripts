@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "public"
 
+[build.environment]
+  SITE_TITLE = "Crypto Daily Scripts"
+  SITE_BASE_URL = "https://sparkling-starlight-40dec2.netlify.app"
+
 [[headers]]
   for = "/*"
   [headers.values]
