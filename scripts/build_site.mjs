@@ -11,7 +11,7 @@ const siteBaseUrl = (process.env.SITE_BASE_URL || "").replace(/\/$/, "");
 const categoryGroups = [
   {
     title: "市场维度",
-    categories: ["宏观", "美股", "亚洲市场", "A股港股", "主流加密货币", "热币异动", "监管/ETF"]
+    categories: ["宏观", "经济指标", "美股", "亚洲市场", "A股港股", "债市", "外汇市场", "黄金白银", "主流加密货币", "热币异动", "监管/ETF"]
   },
   {
     title: "分析维度",
