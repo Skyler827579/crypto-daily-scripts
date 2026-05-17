@@ -8,6 +8,16 @@ const contentDir = path.join(root, "content", "crypto-daily");
 const publicDir = path.join(root, "public");
 const siteTitle = process.env.SITE_TITLE || "Crypto Daily Scripts";
 const siteBaseUrl = (process.env.SITE_BASE_URL || "").replace(/\/$/, "");
+const categoryGroups = [
+  {
+    title: "市场维度",
+    categories: ["宏观", "美股", "亚洲市场", "A股港股", "主流加密货币", "热币异动", "监管/ETF"]
+  },
+  {
+    title: "分析维度",
+    categories: ["市场技术分析", "情绪分析", "链上数据", "每日行情"]
+  }
+];
 
 await buildSite();
 console.log("Static site rebuilt.");
@@ -21,6 +31,7 @@ async function buildSite() {
   const categories = collectCategories(posts);
   await fs.writeFile(path.join(publicDir, "index.html"), renderIndex(posts, categories));
   await fs.writeFile(path.join(publicDir, "archive.html"), renderArchive(posts));
+  await fs.writeFile(path.join(publicDir, "categories.html"), renderCategoriesIndex(categories));
   await fs.writeFile(path.join(publicDir, "style.css"), css());
   await fs.writeFile(path.join(publicDir, "sitemap.xml"), renderSitemap(posts, categories));
 
@@ -72,6 +83,7 @@ function renderIndex(posts, categories) {
       <div><strong>${latest ? latest.date : "-"}</strong><span>最新更新</span></div>
     </section>
     ${latest ? postCard(latest, true) : `<p class="empty">还没有稿件。</p>`}
+    ${renderCategoryBlocks(categories)}
     <section>
       <h2>最新稿件</h2>
       <div class="list">${posts.slice(0, 12).map((post) => postCard(post)).join("")}</div>
@@ -86,8 +98,12 @@ function renderArchive(posts) {
 function renderCategory(category, posts) {
   return page(
     category,
-    `<h1>${escapeHtml(category)}</h1><div class="list">${posts.map((post) => postCard(post)).join("")}</div>`
+    `<h1>${escapeHtml(category)}</h1>${posts.length ? `<div class="list">${posts.map((post) => postCard(post)).join("")}</div>` : `<p class="empty">这个分类还没有稿件。</p>`}`
   );
+}
+
+function renderCategoriesIndex(categories) {
+  return page("分类", `<h1>分类</h1>${renderCategoryBlocks(categories)}`);
 }
 
 function renderPost(post) {
@@ -137,6 +153,24 @@ function postCard(post, featured = false) {
   </article>`;
 }
 
+function renderCategoryBlocks(categories) {
+  return `<section>
+    <h2>分类入口</h2>
+    <div class="category-groups">${categoryGroups.map((group) => `<div class="category-group">
+      <h3>${escapeHtml(group.title)}</h3>
+      <div class="category-grid">${group.categories.map((category) => categoryTile(category, categories.get(category) || [])).join("")}</div>
+    </div>`).join("")}</div>
+  </section>`;
+}
+
+function categoryTile(category, posts) {
+  const latest = posts[0];
+  return `<a class="category-tile" href="/categories/${slugify(category)}.html">
+    <strong>${escapeHtml(category)}</strong>
+    <span>${posts.length} 篇${latest ? ` · 最新 ${escapeHtml(latest.date)}` : ""}</span>
+  </a>`;
+}
+
 function page(title, body) {
   return `<!doctype html>
 <html lang="zh-CN">
@@ -149,7 +183,7 @@ function page(title, body) {
 <body>
   <header>
     <a class="brand" href="/">${escapeHtml(siteTitle)}</a>
-    <nav><a href="/archive.html">总目录</a></nav>
+    <nav><a href="/categories.html">分类</a><a href="/archive.html">总目录</a></nav>
   </header>
   <main>${body}</main>
 </body>
@@ -157,11 +191,14 @@ function page(title, body) {
 }
 
 function css() {
-  return `:root{color-scheme:light;--text:#151515;--muted:#656565;--line:#e4e4e4;--bg:#f8f8f6;--panel:#fff;--accent:#0f766e;--soft:#eef7f5}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.68}header{min-height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:2}a{color:inherit}.brand{font-weight:800;text-decoration:none}nav a{color:var(--muted);text-decoration:none}main{max-width:1020px;margin:0 auto;padding:32px 20px 72px}.hero{padding:48px 0 34px;border-bottom:1px solid var(--line);margin-bottom:22px}.hero h1{font-size:clamp(34px,5vw,58px);line-height:1.06;margin:8px 0 16px;letter-spacing:0}.hero p{max-width:760px;color:var(--muted);font-size:18px}.eyebrow,.date{color:var(--accent);font-size:14px;font-weight:750}.overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 18px}.overview div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}.overview strong{display:block;font-size:22px}.overview span{color:var(--muted);font-size:13px}.list{display:grid;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px}.card h2{margin:4px 0 8px;font-size:22px;line-height:1.28}.card h2 a{text-decoration:none}.card p{margin:0 0 14px;color:var(--muted)}.featured{border-color:#92cfc7;background:linear-gradient(180deg,#fff,#f8fdfc)}.tags{display:flex;gap:8px;flex-wrap:wrap}.tags a{font-size:13px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);background:#fff}.post{background:#fff;border:1px solid var(--line);border-radius:8px;padding:28px}.post h1{font-size:36px;line-height:1.15;margin:6px 0 16px;letter-spacing:0}.post h2{font-size:20px;margin-top:28px}.hook{font-size:20px;color:#333;border-left:4px solid var(--accent);padding-left:14px}.brief{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}.brief div{background:var(--soft);border:1px solid #cfe8e3;border-radius:8px;padding:14px}.brief span{font-size:13px;color:var(--accent);font-weight:800}.brief p{margin:6px 0 0}.script p{margin:0 0 14px}.sources li{margin-bottom:12px}.sources span{display:block;color:var(--muted);font-size:14px}.empty{color:var(--muted)}@media(max-width:700px){header{padding:0 16px}.overview,.brief{grid-template-columns:1fr}.post{padding:20px}.post h1{font-size:30px}}`;
+  return `:root{color-scheme:light;--text:#151515;--muted:#656565;--line:#e4e4e4;--bg:#f8f8f6;--panel:#fff;--accent:#0f766e;--soft:#eef7f5}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.68}header{min-height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:2}a{color:inherit}.brand{font-weight:800;text-decoration:none}nav{display:flex;gap:16px}nav a{color:var(--muted);text-decoration:none}main{max-width:1020px;margin:0 auto;padding:32px 20px 72px}.hero{padding:48px 0 34px;border-bottom:1px solid var(--line);margin-bottom:22px}.hero h1{font-size:clamp(34px,5vw,58px);line-height:1.06;margin:8px 0 16px;letter-spacing:0}.hero p{max-width:760px;color:var(--muted);font-size:18px}.eyebrow,.date{color:var(--accent);font-size:14px;font-weight:750}.overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 18px}.overview div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}.overview strong{display:block;font-size:22px}.overview span{color:var(--muted);font-size:13px}.category-groups{display:grid;gap:16px;margin-bottom:28px}.category-group{background:#fff;border:1px solid var(--line);border-radius:8px;padding:18px}.category-group h3{margin:0 0 12px;font-size:17px}.category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.category-tile{display:block;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfbfa;min-height:84px}.category-tile strong{display:block;font-size:16px}.category-tile span{display:block;color:var(--muted);font-size:13px;margin-top:5px}.list{display:grid;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px}.card h2{margin:4px 0 8px;font-size:22px;line-height:1.28}.card h2 a{text-decoration:none}.card p{margin:0 0 14px;color:var(--muted)}.featured{border-color:#92cfc7;background:linear-gradient(180deg,#fff,#f8fdfc)}.tags{display:flex;gap:8px;flex-wrap:wrap}.tags a{font-size:13px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);background:#fff}.post{background:#fff;border:1px solid var(--line);border-radius:8px;padding:28px}.post h1{font-size:36px;line-height:1.15;margin:6px 0 16px;letter-spacing:0}.post h2{font-size:20px;margin-top:28px}.hook{font-size:20px;color:#333;border-left:4px solid var(--accent);padding-left:14px}.brief{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}.brief div{background:var(--soft);border:1px solid #cfe8e3;border-radius:8px;padding:14px}.brief span{font-size:13px;color:var(--accent);font-weight:800}.brief p{margin:6px 0 0}.script p{margin:0 0 14px}.sources li{margin-bottom:12px}.sources span{display:block;color:var(--muted);font-size:14px}.empty{color:var(--muted)}@media(max-width:900px){.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){header{padding:0 16px}.overview,.brief{grid-template-columns:1fr}.category-grid{grid-template-columns:1fr}.post{padding:20px}.post h1{font-size:30px}}`;
 }
 
 function collectCategories(posts) {
   const map = new Map();
+  for (const category of categoryGroups.flatMap((group) => group.categories)) {
+    map.set(category, []);
+  }
   for (const post of posts) {
     for (const category of post.categories) {
       if (!map.has(category)) map.set(category, []);
@@ -176,6 +213,7 @@ function renderSitemap(posts, categories) {
   const urls = [
     "",
     "/archive.html",
+    "/categories.html",
     ...posts.map((post) => `/posts/${post.slug}.html`),
     ...Array.from(categories.keys()).map((category) => `/categories/${slugify(category)}.html`)
   ];
