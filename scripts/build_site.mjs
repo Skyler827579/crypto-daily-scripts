@@ -131,6 +131,7 @@ function renderPost(post) {
       ${section("不要这么讲", post.avoid_angles)}
       <h2>口播稿</h2>
       <div class="script">${escapeHtml(post.script || "").split("\n").filter(Boolean).map((line) => `<p>${line}</p>`).join("")}</div>
+      ${post.short_script ? `<h2>3-5分钟口播稿</h2><div class="script">${escapeHtml(post.short_script).split("\n").filter(Boolean).map((line) => `<p>${line}</p>`).join("")}</div>` : ""}
       ${section("备用标题", post.video_titles)}
       <h2>参考来源</h2>
       <ol class="sources">${post.sources.map((source) => `<li><a href="${escapeAttr(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.title)}</a><span>${escapeHtml(source.publisher || "")} · ${escapeHtml(source.note || "")}</span></li>`).join("")}</ol>
